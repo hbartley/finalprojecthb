@@ -1,0 +1,121 @@
+---
+title: "Bartley Final Project"
+format: html
+editor: visual
+---
+
+#load in libraries
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(tidycensus)
+library(ggplot2)
+```
+
+#Load healthcare location data
+
+```{r}
+library(readr)
+GeorgiaHealthCareFacilities <- read_csv("GeorgiaHealthCareFacilities.csv")
+```
+
+#Filter healthcare locations to only Fulton, DeKalb, Cobb, and Clayton counties (potential MARTA service area)
+
+```{r}
+atlanta_health <- GeorgiaHealthCareFacilities |>
+  filter(County == "Fulton County" | County == "DeKalb County" | County == "Clayton County" | County == "Cobb County")
+```
+
+#Exported Atlanta Healthcare location data for use in QGIS
+
+```{r}
+#write.csv(atlanta_health, "atlanta_healthcare_data.csv")
+
+```
+
+#Finding the number of healthcare locations in each county that MARTA Services
+
+```{r}
+county_counts <- atlanta_health |>
+  group_by(County) |>
+  summarise(Healthcare_locations = n())
+print(county_counts)
+```
+
+#Displaying the number of healthcare locations in each county on a graph
+
+```{r}
+ggplot(county_counts, aes(x = County, y = Healthcare_locations)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Healthcare Locations by County",
+    x = "County",
+    y = "Number of Healthcare Locations")
+```
+
+#Importing MARTA Train Station data
+
+```{r}
+MARTA_Rail_Stations <- read_csv("MARTA_Rail_Stations_-1706175048887107171.csv")
+```
+
+#Add a county column
+
+```{r}
+MARTA_Rail_Stations <- MARTA_Rail_Stations |>
+  mutate(
+    County = case_when(
+      (City == "Atlanta" | City == "College Park" | City == "East Point" | City == "Sandy Springs") ~ "Fulton",
+      (City == "Decatur" | City == "Brookhaven" | City == "Stone Mountain") ~ "DeKalb",
+      (City == "Doraville") ~ "Clayton"
+    )
+  )
+```
+
+#Finding the number of MARTA stations in each county that MARTA Services
+
+```{r}
+MARTA_county_counts <- MARTA_Rail_Stations |>
+  group_by(County) |>
+  summarise(MARTA_Rail_Stations = n())
+print(MARTA_county_counts)
+```
+
+#Chart of MARTA Rail Stations by County
+
+```{r}
+ggplot(MARTA_county_counts, aes(x = County, y = MARTA_Rail_Stations)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of MARTA Stations by County",
+    x = "County",
+    y = "Number of MARTA Stations")
+```
+
+#Importing healthcare data for locations within the one mile buffer
+
+```{r}
+MARTAroutes_noline <- read_csv("selectednoline.csv")
+```
+
+#Importing healthcare data for locations within the one mile buffer including the proposed new route
+
+```{r}
+MARTAroutes_newline <- read_csv("newlinehealth.csv")
+```
+
+#Counting rows in each data set and finding the difference
+
+```{r}
+oldroute_rows <- nrow(MARTAroutes_noline)
+newline_rows <- nrow(MARTAroutes_newline)
+
+row_difference <- abs(oldroute_rows - newline_rows)
+percent_change <- abs(oldroute_rows - newline_rows) / ((oldroute_rows + newline_rows) / 2) * 100
+
+row_difference
+percent_change
+```
+
+There are 20 more healthcare locations included with the new route.
+
+There is a 12.8% increase in healthcare locations within the new 1 mile boundary around MARTA train routes when the new route is included.
